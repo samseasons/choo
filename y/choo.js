@@ -54,7 +54,6 @@ export function choo () {
       }
     }
   }
-  
 
   function replace_attributes (next, past) {
     let attr, attrs = next.attributes, i, name, namespace, val
@@ -711,16 +710,36 @@ function cache () {
     return string(random((chars + 1) * 0.75)).slice(0, chars)
   }
 
+  function blob (a) {
+    return new Blob([a])
+  }
+
+  function file_reader () {
+    return new FileReader()
+  }
+
+  function promise (a) {
+    return new Promise(a)
+  }
+
   function base (a) {
-    return new TextEncoder().encode(a)
+    return promise(resolve => {
+      const b = file_reader()
+      b.onloadend = a => resolve(b.result.slice(37))
+      b.readAsDataURL(blob(a))
+    })
   }
 
   function sabe (a) {
-    return new TextDecoder().decode(a)
+    return promise(resolve => {
+      const b = file_reader()
+      b.onloadend = a => resolve(b.result)
+      b.readAsText(blob(a))
+    })
   }
 
-  this.encrypt = function (patch) {
-    patch = base(JSON.stringify(patch))
+  this.encrypt = async function (patch) {
+    patch = bytes(await base(JSON.stringify(patch)))
     const length = len(patch)
     const rand = random(length)
     for (let i = 0; i < length; i++) {
@@ -729,13 +748,13 @@ function cache () {
     return [string(patch), string(rand)]
   }
 
-  this.decrypt = function (patch, rand) {
+  this.decrypt = async function (patch, rand) {
     patch = bytes(patch)
     rand = bytes(rand)
     for (let i = 0, length = len(patch); i < length; i++) {
       patch[i] ^= rand[i]
     }
-    return JSON.parse(sabe(patch))
+    return JSON.parse(await sabe(patch))
   }
 
   async function get_key (key) {
