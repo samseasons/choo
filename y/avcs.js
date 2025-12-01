@@ -76,7 +76,9 @@ function bcdiff (past, next) {
     if (leaf in branch) {
       leaf = branch[leaf]
       if (typeof leaf == 'number') {
-        return [leaf, overlaps(next.slice(leaf), stick)]
+        if (j > 2) {
+          return [leaf, overlaps(next.slice(leaf), stick)]
+        }
       } else if (typeof leaf == 'object') {
         return matches(leaf, stick, i, j + 1)
       }
@@ -108,28 +110,28 @@ function bcdiff (past, next) {
 
   function reps (a) {
     let length, longest = 2, position, repeats = 0, section
-    for (let b, c, d, e, f, g, h, i = 0, j, l = len(a), m, n; i < l; i++) {
-      for (j = i + 1; j <= l; j++) {
-        b = a.slice(i, j)
-        c = [...b]
-        f = j - i
-        n = 0
-        for (g = 2, h = (l - i + 1) / f; g < h; g++) {
-          c.push(...b)
-          d = check(a, c)
-          if (d < 0) {
+    for (let b, c, d, e, f, g, h, i = 0, j, k, l = len(a), m; i < l; i++) {
+      for (b = i + 1; b <= l; b++) {
+        c = a.slice(i, b)
+        d = [...c]
+        e = b - i
+        f = 0
+        for (g = 2, h = (l - i + 1) / e; g < h; g++) {
+          d.push(...c)
+          j = check(a, d)
+          if (j < 0) {
             break
           }
-          e = d
-          n = g
+          f = g
+          k = j
         }
-        m = f * n
-        if (m > longest || (m == longest && n > repeats)) {
-          length = f
+        m = e * f
+        if (m > longest || (m == longest && f > repeats)) {
+          length = e
           longest = m
-          position = e
-          repeats = n
-          section = b
+          position = k
+          repeats = f
+          section = c
         }
       }
     }
@@ -188,7 +190,7 @@ function bcdiff (past, next) {
     patch.push('a', l, ...f)
     p.push(q += 2 + l)
   }
-  let a, as = {}, h, j, k, m, o = []
+  let a, as = {}, g = [], h, j, k, m
   for (i of p) {
     if (patch[i] == 'a') {
       a = i + 2
@@ -201,30 +203,30 @@ function bcdiff (past, next) {
           m.push(j)
         }
       }
-      k = -1
       if (len(m) == 0) {
         patch[i] = 'c'
       } else {
+        l = -1
         for (j of m) {
           h = j - 2
-          l = -1
-          if (patch[h] > l || i == j && patch[h] == l) {
+          k = falsee
+          if (patch[j] == 'a') {
+            k = truee
+          } else if (patch[h] > l || i == j && patch[h] == l) {
+            k = truee
             l = patch[h]
-            if (h != i) {
-              k = j
-              if (i in as) {
-                as[i].push([k, patch[i + 1]])
-              } else {
-                as[i] = [[k, patch[i + 1]]]
-              }
+            h = a + patch[i + 1]
+            while (i <= h) {
+              g.push(h--)
             }
           }
-        }
-      }
-      if (0 <= k) {
-        j = a + patch[i + 1]
-        while (i <= j) {
-          o.unshift(j--)
+          if (k) {
+            if (i in as) {
+              as[i].push([j, patch[i + 1]])
+            } else {
+              as[i] = [[j, patch[i + 1]]]
+            }
+          }
         }
       }
     }
@@ -233,54 +235,55 @@ function bcdiff (past, next) {
   const bs = {}, cs = {}, es = {}
   i = 0, j = 0, length = len(patch), p = []
   while (i < length) {
+    b = i
+    c = j
     cs[i] = j + 1
-    h = i
-    k = j
-    while (h-- > 0 && !(h in cs)) {
-      cs[h] = k--
+    while (b-- > 0 && !(b in cs)) {
+      cs[b] = c--
     }
-    d = falsee
+    b = falsee
     if (i in as) {
       c = -1
-      k = as[i]
-      for (a of k) {
-        b = a[0]
-        if (o.indexOf(b) == -1 && (c == -1 || abs(b - i) < c)) {
-          c = abs(b - i)
-          d = a
+      d = as[i]
+      for (a of d) {
+        e = a[0]
+        if (g.indexOf(e) == -1 && (c == -1 || abs(e - i) < c) && (e < i || patch[a[0] - 2] != 'a')) {
+          b = a
+          c = abs(e - i)
         }
       }
-      if (d) {
-        c = d[0] - 3
-        if (patch[c] == 'a') {
-          bs[i] = d[0]
-          f = ['b', ...d]
-        } else {
+      if (b) {
+        c = b[0] - 3
+        if (patch[c] == 'c') {
           es[i] = c
           f = ['e', c, 0, patch[i + 1]]
+        } else if (patch[c + 1] == 'a') {
+          bs[i] = b[0]
+          f = ['b', ...b]
+          g.push(i + 2)
         }
         i += len(patch.slice(i, i + 2 + patch[i + 1]))
       }
     }
-    if (!d) {
-      d = patch[i]
-      h = patch[i + 1]
-      if (d == 'a') {
-        f = patch.slice(i, i += h + 2)
+    if (!b) {
+      b = patch[i]
+      c = patch[i + 1]
+      if (b == 'a') {
+        f = patch.slice(i, i += c + 2)
         f[1] += j + 2
-      } else if (d == 'c') {
-        f = patch.slice(i, i += h + 2)
+      } else if (b == 'c') {
+        f = patch.slice(i, i += c + 2)
         f = comp(f, j)
       } else {
-        f = [a = d, a + h]
-        i += len(f)
+        f = [a = b, a + c]
+        i += 2
       }
     }
     j += len(f)
     p.push(...f)
   }
   for (b in bs) {
-    p[a = cs[b]] = c = cs[bs[b] - 2]
+    p[a = cs[b]] = c = cs[bs[b] - 1]
     p[a + 1] += c
   }
   for (e in es) {
@@ -313,7 +316,7 @@ function bcpatch (last, p) {
       b = a - i
       b = p.slice(i, i = a, a = b)
       c = last.slice(c = p[i++], d = p[i++], d -= c)
-      return Array(p[i++]).fill().map((i, e) => b[e % a] + c[e % d])
+      return Array(p[i++]).fill().map((i, e) => b[e % a] | c[e % d])
     } else if (a == 'e') {
       a = i
       i = p[i++]
@@ -439,24 +442,23 @@ function avcs () {
       }
       d.push(e)
     }
-    return uint32(d)
+    return d
   }
 
-  function numbytes (a) {
-    let b = 0, c = len(a), d = []
+  function number (a) {
+    let b = 0, c = len(a), d = 0
     while (b < c) {
-      d.push(a[b++] ^ a[b++] << 8 ^ a[b++] << 16 ^ a[b++] << 24)
+      d ^= a[b] << (8 * b++)
     }
-    return uint32(d)
+    return d
   }
 
   this.decode = function (bytes) {
     let b = 0
     let len0 = bytes[b++]
     let len1 = uint32_t(len0 / 4)
-    len0 = len0 % 4
-    len0 = numbytes(bytes.slice(b, b += len0))[0]
-    len1 = numbytes(bytes.slice(b, b += len1))[0]
+    len0 = number(bytes.slice(b, b += len0 % 4))
+    len1 = number(bytes.slice(b, b += len1))
     const bits = bitbytes(bytes.slice(b, b += len0))
     const nums = bytesbytes(bytes.slice(b, b += len1))
     const strs = sabe(bytes.slice(b))
@@ -468,6 +470,9 @@ function avcs () {
   }
 
   function random (bytes=1) {
+    if (bytes > 65536) {
+      return [...random(65536), ...random(bytes - 65536)]
+    }
     return crypto.getRandomValues(uint8(bytes))
   }
 
