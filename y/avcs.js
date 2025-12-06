@@ -11,42 +11,48 @@ function bcdiff (past, next) {
     return [0]
   }
 
-  function trie (i, j, kf, leaf) {
-    const a = next[++kf]
-    if (typeof leaf == 'number') {
-      const b = next[++leaf]
-      const leaves = {}
-      if (a == b) {
-        leaves[b] = trie(i, j, kf, leaf)
-      } else {
-        leaves[a] = i
-        leaves[b] = j
-      }
-      return leaves
-    } else if (typeof leaf == 'object') {
-      leaf[a] = a in leaf ? trie(i, leaf[a], kf, leaf[a]) : i
-      return leaf
-    }
-  }
+  function wood (next) {
 
-  const tree = {}
-  for (let a, b, branch, i = 0, leaf, length = len(next); i < length; i++) {
-    a = next[i]
-    b = next[i + 1]
-    if (a in tree) {
-      branch = tree[a]
-      if (b in branch) {
-        leaf = branch[b]
-        branch[b] = {...trie(i, leaf, i, leaf)[b], ...leaf}
+    function trie (i, j, kf, leaf) {
+      const a = next[++kf]
+      if (typeof leaf == 'number') {
+        const b = next[++leaf]
+        const leaves = {}
+        if (a == b) {
+          leaves[b] = trie(i, j, kf, leaf)
+        } else {
+          leaves[a] = i
+          leaves[b] = j
+        }
+        return leaves
+      } else if (typeof leaf == 'object') {
+        leaf[a] = a in leaf ? trie(i, leaf[a], kf, leaf[a]) : i
+        return leaf
+      }
+    }
+
+    const tree = {}
+    for (let a, b, branch, i = 0, leaf, length = len(next); i < length; i++) {
+      a = next[i]
+      b = next[i + 1]
+      if (a in tree) {
+        branch = tree[a]
+        if (b in branch) {
+          leaf = branch[b]
+          branch[b] = {...trie(i, leaf, i, leaf)[b], ...leaf}
+        } else {
+          branch[b] = i
+        }
       } else {
+        branch = {}
         branch[b] = i
       }
-    } else {
-      branch = {}
-      branch[b] = i
+      tree[a] = branch
     }
-    tree[a] = branch
+    return tree
   }
+
+  const tree = wood(next)
 
   function overlaps (a, b) {
     let i = 0, length = len(a)
@@ -76,8 +82,9 @@ function bcdiff (past, next) {
     if (leaf in branch) {
       leaf = branch[leaf]
       if (typeof leaf == 'number') {
-        if (j > 2) {
-          return [leaf, overlaps(next.slice(leaf), stick)]
+        i = overlaps(next.slice(leaf), stick)
+        if (i > 2) {
+          return [leaf, i]
         }
       } else if (typeof leaf == 'object') {
         return matches(leaf, stick, i, j + 1)
@@ -96,54 +103,59 @@ function bcdiff (past, next) {
     return falsee
   }
 
-  function check (list, sublist, j=0) {
+  function position (list, sublist, j=0) {
     if (len(sublist) == 0) {
       return j
     }
     for (let a = sublist[0], i = 0, l = len(list), m = len(sublist); i < l; i++) {
       if (list[i] === a) {
-        return check(list.slice(i + 1, i + m), sublist.slice(1), j ? j : i)
+        return position(list.slice(i + 1, i + m), sublist.slice(1), j ? j : i)
       }
     }
     return -1
   }
 
-  function reps (a) {
-    let length, longest = 2, position, repeats = 0, section
-    for (let b, c, d, e, f, g, h, i = 0, j, k, l = len(a), m; i < l; i++) {
-      for (b = i + 1; b <= l; b++) {
-        c = a.slice(i, b)
-        d = [...c]
-        e = b - i
-        f = 0
-        for (g = 2, h = (l - i + 1) / e; g < h; g++) {
-          d.push(...c)
-          j = check(a, d)
-          if (j < 0) {
-            break
+  function checks (best, branch, buffer, leaf) {
+    if (typeof leaf == 'object') {
+      let e = Object.keys(leaf)
+      for (let f of e) {
+        if (branch[0] == f) {
+          let g, h, i, j
+          g = leaf[f]
+          h = branch.concat(f)
+          i = 1
+          j = h[i]
+          while (typeof g == 'object' && j in g) {
+            g = g[j]
+            h.push(j)
+            i++
+            j = h[i]
           }
-          f = g
-          k = j
+          if (i > 3 && i > (best[3] | 0)) {
+            best = []
+          }
         }
-        m = e * f
-        if (m > longest || (m == longest && f > repeats)) {
-          length = e
-          longest = m
-          position = k
-          repeats = f
-          section = c
-        }
+        best = checks(best, branch.concat(f), buffer, leaf[f])
       }
     }
-    return [length, section, repeats, position, longest]
+    return best
+  }
+
+  function reps (buffer) {
+    const b = wood(buffer.slice(2))
+    let best = [], i = 0, leaf
+    for (leaf of Object.keys(b)) {
+      best = checks(best, buffer, [leaf], b[leaf], i++)
+    }
+    return best
   }
 
   function comp (a, b) {
     let c = reps(a)
-    let d = c[4]
+    let d = c[3]
     if (d >= 3) {
-      const e = ['c', c[0] + b + 2, ...c[1], c[2]]
-      c = c[3]
+      const e = ['c', b + len(c[0]) + 2, ...c[0], c[1]]
+      c = c[2]
       if (c >= 3) {
         a[1] = c - 2
         e.unshift(...comp(a.slice(0, c), b))
@@ -166,7 +178,7 @@ function bcdiff (past, next) {
     if (match) {
       l = len(f)
       if (l) {
-        pos = check(next, f)
+        pos = position(next, f)
         if (pos >= 0) {
           patch.push(pos, l)
           p.push(q += 2)
@@ -190,7 +202,7 @@ function bcdiff (past, next) {
     patch.push('a', l, ...f)
     p.push(q += 2 + l)
   }
-  let a, as = {}, g = [], h, j, k, m
+  let a, as = {}, g = [], h, j, k, m, ps = []
   for (i of p) {
     if (patch[i] == 'a') {
       a = i + 2
@@ -205,6 +217,7 @@ function bcdiff (past, next) {
       }
       if (len(m) == 0) {
         patch[i] = 'c'
+        ps.push(i)
       } else {
         l = -1
         for (j of m) {
@@ -252,20 +265,19 @@ function bcdiff (past, next) {
           c = abs(e - i)
         }
       }
-      if (b) {
-        c = b[0] - 3
-        if (patch[c] == 'c') {
-          es[i] = c
-          f = ['e', c, 0, patch[i + 1]]
-        } else if (patch[c + 1] == 'a') {
-          bs[i] = b[0]
-          f = ['b', ...b]
-          g.push(i + 2)
-        }
-        i += len(patch.slice(i, i + 2 + patch[i + 1]))
-      }
     }
-    if (!b) {
+    if (b) {
+      c = b[0] - 3
+      if (ps.indexOf(c) > -1) {
+        es[i] = c
+        f = ['e', c, 1, patch[i + 1] + 1]
+      } else {
+        bs[i] = b[0]
+        f = ['b', ...b]
+        g.push(i + 2)
+      }
+      i += len(patch.slice(i, i + 2 + patch[i + 1]))
+    } else {
       b = patch[i]
       c = patch[i + 1]
       if (b == 'a') {
@@ -316,7 +328,7 @@ function bcpatch (last, p) {
       b = a - i
       b = p.slice(i, i = a, a = b)
       c = last.slice(c = p[i++], d = p[i++], d -= c)
-      return Array(p[i++]).fill().map((i, e) => b[e % a] | c[e % d])
+      return Array(p[i++]).fill().map((i, e) => b[e % a] + c[e % d])
     } else if (a == 'e') {
       a = i
       i = p[i++]
