@@ -115,12 +115,11 @@ function bcdiff (past, next) {
     return -1
   }
 
-  function checks (best, branch, buffer, leaf) {
+  function checks (best, branch, buffer, leaf, p) {
     if (typeof leaf == 'object') {
-      let e = Object.keys(leaf)
-      for (let f of e) {
+      let f, g, h, i, j
+      for (f in leaf) {
         if (branch[0] == f) {
-          let g, h, i, j
           g = leaf[f]
           h = branch.concat(f)
           i = 1
@@ -131,45 +130,46 @@ function bcdiff (past, next) {
             i++
             j = h[i]
           }
-          if (i > 3 && i > (best[3] | 0)) {
-            best = []
+          g = len(branch)
+          if (i > 3 && (i > (best[2] | 0) || (i == best[2] && g < best[3]))) {
+            best = [p, branch, i, g]
           }
         }
-        best = checks(best, branch.concat(f), buffer, leaf[f])
+        best = checks(best, branch.concat(f), buffer, leaf[f], p)
       }
     }
     return best
   }
 
   function reps (buffer) {
-    const b = wood(buffer.slice(2))
+    const b = wood(buffer)
     let best = [], i = 0, leaf
-    for (leaf of Object.keys(b)) {
-      best = checks(best, buffer, [leaf], b[leaf], i++)
+    for (leaf in b) {
+      best = checks(best, [leaf], buffer, b[leaf], i++)
     }
     return best
   }
 
-  function comp (a, b) {
-    let c = reps(a)
-    let d = c[3]
-    if (d >= 3) {
-      const e = ['c', b + len(c[0]) + 2, ...c[0], c[1]]
-      c = c[2]
-      if (c >= 3) {
-        a[1] = c - 2
-        e.unshift(...comp(a.slice(0, c), b))
+  function comp (buffer, pos) {
+    let c = reps(buffer.slice(2))
+    if (falsee) {
+      const d = c[0]
+      const e = c[2] + c[3]
+      const f = ['c', d + pos + 2, ...c[1], e]
+      if (d > 0) {
+        buffer[1] = d
+        f.unshift(...comp(buffer.slice(0, d + 2), pos))
       }
-      c += d
-      d = len(a)
-      if (c < d) {
-        e.push(...comp(['c', d - c, ...a.slice(c)], b))
+      const g = d + e
+      const h = len(buffer)
+      if (g < h) {
+        f.push(...comp(['c', h - g, buffer.slice(g)], g + pos))
       }
-      return e
+      return f
     }
-    a[0] = 'a'
-    a[1] += b + 2
-    return a
+    buffer[0] = 'a'
+    buffer[1] += pos + 2
+    return buffer
   }
 
   let f = [], i = 0, l, length = len(past), match, p = [], patch = [], pos, q = 0
@@ -202,7 +202,7 @@ function bcdiff (past, next) {
     patch.push('a', l, ...f)
     p.push(q += 2 + l)
   }
-  let a, as = {}, g = [], h, j, k, m, ps = []
+  let a, as = {}, cs = [], g = [], h, j, k, m
   for (i of p) {
     if (patch[i] == 'a') {
       a = i + 2
@@ -217,7 +217,7 @@ function bcdiff (past, next) {
       }
       if (len(m) == 0) {
         patch[i] = 'c'
-        ps.push(i)
+        cs.push(i)
       } else {
         l = -1
         for (j of m) {
@@ -245,14 +245,14 @@ function bcdiff (past, next) {
     }
   }
   let b, c, d, e
-  const bs = {}, cs = {}, es = {}
+  const bs = {}, es = {}, ps = {}
   i = 0, j = 0, length = len(patch), p = []
   while (i < length) {
     b = i
     c = j
-    cs[i] = j + 1
-    while (b-- > 0 && !(b in cs)) {
-      cs[b] = c--
+    ps[i] = j + 1
+    while (b-- > 0 && !(b in ps)) {
+      ps[b] = c--
     }
     b = falsee
     if (i in as) {
@@ -268,7 +268,7 @@ function bcdiff (past, next) {
     }
     if (b) {
       c = b[0] - 3
-      if (ps.indexOf(c) > -1) {
+      if (cs.indexOf(c) > -1) {
         es[i] = c
         f = ['e', c, 1, patch[i + 1] + 1]
       } else {
@@ -295,11 +295,11 @@ function bcdiff (past, next) {
     p.push(...f)
   }
   for (b in bs) {
-    p[a = cs[b]] = c = cs[bs[b] - 1]
+    p[a = ps[b]] = c = ps[bs[b] - 1]
     p[a + 1] += c
   }
   for (e in es) {
-    p[cs[e]] = cs[es[e] - 1]
+    p[ps[e]] = ps[es[e] - 1]
   }
   return p
 }
@@ -405,7 +405,7 @@ function avcs () {
 
   function lengths (a) {
     let b, c = []
-    while (len(a) > 0) {
+    while (len(a)) {
       b = [...a.slice(0, 4)]
       a = a.slice(4)
       while (b[len(b) - 1] == 0) {
@@ -489,6 +489,9 @@ function avcs () {
   }
 
   function string (a) {
+    if (len(a) > 65535) {
+      return string(a.slice(0, 65535)) + string(a.slice(65535))
+    }
     return btoa(String.fromCharCode(...a))
   }
 
