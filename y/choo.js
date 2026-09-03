@@ -1,10 +1,10 @@
 export const empty = '', falsee = false, truee = true
 
-export function len (a) {
+export const len = (a) => {
   return a.length
 }
 
-export function choo () {
+export const choo = function () {
   const v = 'value'
   const events = ['abort', 'click', 'error', 'keydown', 'load', 'loadend', 'message', 'mousedown', 'mousemove',
     'online', 'open', 'popstate', 'success', 'touchmove', 'upgradeneeded', 'versionchange'].map(e => 'on' + e)
@@ -248,7 +248,7 @@ export function choo () {
 
 }
 
-function html (comments) {
+const _html = function (comments) {
   const var_attr = 0, text_attr = 1, open_attr = 2, close_attr = 3, attr = 4, attr_key = 5, attr_key_w = 6,
       attr_value_w = 7, attr_value = 8, attr_sq = 9, attr_dq = 10, attr_eq = 11, attr_break = 12, comment = 13
   const comment_tag = '!--', dq = '"', eq = '=', func = 'function', obj = 'object', p = ' ', slash = '/', sq = "'",
@@ -621,9 +621,9 @@ function html (comments) {
 
 }
 
-export var html = new html().html
+export const html = new _html().html
 
-function cache () {
+const _cache = function () {
   const a = 'a', b = 'b', dot = '.', rw = 'readwrite', slash = '/', spa = ' ('
 
   window.IDBKeyRange ||= window.msIDBKeyRange || window.webkitIDBKeyRange
@@ -1080,4 +1080,4 @@ function cache () {
 
 }
 
-export var cache = new cache()
+export const cache = new _cache()

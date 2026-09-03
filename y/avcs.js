@@ -1,4 +1,4 @@
-import { empty, falsee, len, truee } from 'choo'
+import { empty, falsee, len, truee } from './choo.js'
 
 function bcdiff (past, next) {
   if (typeof past == 'string') {

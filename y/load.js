@@ -1,17 +1,17 @@
-import { html } from 'choo'
+import { html } from './choo.js'
 
-export function process (state, relay) {
-  relay.b('change', function (a1, a2) {
+export const process = (state, emit) => {
+  emit.on('change', (a1, a2) => {
     if (!state[a1]) state[a1] = a2
   })
 }
 
-export function load (state, relay) {
+export const load = (state, emit) => {
   const loads = {}
   Object.assign(state, loads)
-  relay('change', 'arg1', 'arg2')
+  emit('change', 'arg1', 'arg2')
 }
 
-export function route (state, relay) {
+export const route = (state, emit) => {
   return html`<div id='xo'>${html`water`}</div>`
 }

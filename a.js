@@ -1,8 +1,8 @@
-import { choo } from 'y/choo'
-import { load, process, route } from 'y/load'
+import { choo } from './y/choo.js'
+import { load, process, route } from './y/load.js'
 
-choo = new choo()
-choo.use(process)
-choo.load(load)
-choo.route(route)
-choo.mount('xo')
+const choos = new choo()
+choos.use(process)
+choos.load(load)
+choos.route(route)
+choos.mount('xo')
